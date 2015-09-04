@@ -1,0 +1,18 @@
+<video autoplay preload="auto" width="800" loop>
+{{#each video}}
+  <source src="/video/{{this.file}}" type="video/{{this.type}}">
+{{/each}}
+</video>
+<ul id="turnos">
+<li></li>
+</ul>
+<script>
+  socket.on('turno asignado', function(datos){
+    var o = JSON.parse(datos);
+    var ul = document.getElementById("turnos");
+    var li = document.createElement("li");
+    var texto = "Turno: " + o.turno + " pasar a la caja: " + o.caja;
+    li.appendChild(document.createTextNode(texto));
+    ul.insertBefore(li, ul.firstChild);
+  });
+</script>

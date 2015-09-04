@@ -1,0 +1,24 @@
+{
+  "name": "ticketqueue",
+  "version": "1.0.0",
+  "description": "",
+  "main": "ticketqueue.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ivandavid77/ticketqueue.git"
+  },
+  "author": "Ivan David Barron Baez",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ivandavid77/ticketqueue/issues"
+  },
+  "homepage": "https://github.com/ivandavid77/ticketqueue#readme",
+  "dependencies": {
+    "express": "^4.13.3",
+    "express-handlebars": "^2.0.1",
+    "socket.io": "^1.3.6"
+  }
+}

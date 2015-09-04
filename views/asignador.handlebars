@@ -1,0 +1,14 @@
+<label>Caja</label>
+<input id="caja" type="text"><br>
+<label>Turno</label>
+<input id="turno" type="text"><br>
+<input id="asignarTurno" type="button" value="Asignar turno">
+<script>
+  var asignarTurno = document.getElementById("asignarTurno")  ;
+  asignarTurno.addEventListener('click', function() {
+    var caja = document.getElementById("caja").value;
+    var turno = document.getElementById("turno").value;
+    var datos = {"caja": caja, "turno": turno};
+    socket.emit("turno asignado", JSON.stringify(datos));
+  });
+</script>

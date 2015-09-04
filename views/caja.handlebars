@@ -1,0 +1,31 @@
+<input id="caja" type="text"><br>
+<input id="registrar" type="button" value="registrar"><br>
+<br>
+<br>
+<label id="mensaje">Turno siguiente</label>
+<input id="turno" type="text" readonly>
+<br>
+<br>
+<input id="disponible" type="button" value="disponible" disabled>
+<script>
+  var registrar = document.getElementById("registrar");
+  var disponible = document.getElementById("disponible");
+  var turno = document.getElementById("turno");
+  var mensaje = document.getElementById("mensaje");
+  registrar.addEventListener('click', function(){
+    registrar.disabled = true;
+    var caja = document.getElementById("caja").value;
+    console.log(caja);
+    socket.on("caja "+caja, function(t){
+      disponible.disabled = false;
+      turno.value = t;
+      mensaje.innerHTML = "Atendiendo";
+    });
+  });
+  disponible.addEventListener('click', function(){
+    disponible.disabled = true;
+    turno.value = "";
+    mensaje.value = "Turno siguiente";
+    socket.emit("caja disponible", caja);
+  });
+</script>

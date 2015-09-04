@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head>
+  <title>Crediland</title>
+  <script src="/js/jquery-1.10.2.js"></script>
+  <script src="/js/jquery-ui.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    var socket = io();
+    function ready(fn) {
+      if (document.readyState != 'loading') {
+        fn();
+      } else {
+        document.addEventListener('DOMContentLoaded', fn)
+      }
+    }
+  </script>
+</head>
+<body>
+{{{body}}}
+</body>
+</html>
