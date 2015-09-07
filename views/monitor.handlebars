@@ -3,16 +3,77 @@
   <source src="/video/{{this.file}}" type="video/{{this.type}}">
 {{/each}}
 </video>
-<ul id="turnos">
-<li></li>
-</ul>
+<div style="float:right;text-align:center;margin: auto;margin-right:30px;">
+  <div id="reloj"></div>
+  <div style="font-family:courier;">
+    <h2>
+      <span class="label label-primary">Turno</span>
+      <span class="label label-primary">Caja</span>
+    </h2>
+    <ul id="turnos" style="list-style-type: none;padding:0;margin:0;">
+      <li></li>
+    </ul>
+  </div>
+</div>
+<script src="/js/jquery.thooClock.js"></script>
 <script>
-  socket.on('turno asignado', function(datos){
-    var o = JSON.parse(datos);
-    var ul = document.getElementById("turnos");
-    var li = document.createElement("li");
-    var texto = "Turno: " + o.turno + " pasar a la caja: " + o.caja;
-    li.appendChild(document.createTextNode(texto));
-    ul.insertBefore(li, ul.firstChild);
+  ready(function() {
+    $( "#reloj" ).thooClock({
+      size: 225,
+      showNumerals: true,
+      brandText: "Caravana Crediland 2015"
+    });
+    function crearSpan(value, padding) {
+      var el = document.createElement("span");
+      el.setAttribute("class", "label label-default");
+      var pad = "&nbsp;".repeat(padding - value.length);
+      el.innerHTML = pad + value;
+      return el;
+    }
+    function consultarClima(woeid, callback) {
+      var request = new XMLHttpRequest();
+      var host = "query.yahooapis.com/v1/public/yql?q=";
+      var uri = "select * from weather.forecast where woeid="+woeid+"\n";
+      var query = encodeURI(uri);
+      request.open("GET", "https://"+host+query+"&format=json", true);
+      request.onload = function() {
+        if (request.status >= 200 && request.status < 400) {
+          var data = JSON.parse(request.responseText);
+          callback(data);
+        }
+      };
+      request.send();
+    }
+    socket.on('turno asignado', function(datos) {
+      var o = JSON.parse(datos);
+      var ul = document.getElementById("turnos");
+      var li = document.createElement("li");
+      li.style.display = "none";
+      ul.insertBefore(li, ul.firstChild);
+      
+      var turno = crearSpan(o.turno, 5); 
+      var caja = crearSpan(o.caja, 4) 
+      
+      var h2 = document.createElement("h2");
+      h2.appendChild(turno);
+      h2.appendChild(document.createTextNode(" "));
+      h2.appendChild(caja);
+      li.appendChild(h2);
+      $( "#turnos li:first-child" ).show( "slide" );
+      
+      var elems = ul.getElementsByTagName("li");
+      while (elems.length >= 8) {
+        $(elems[7]).hide(500);
+        sleep(1000);
+        elems[7].remove();
+        elems = ul.getElementsByTagName("li");
+      }
+    });
+    function actualizarClima(datos) {
+      console.log(datos);
+    }
+    var woeid = 90296029;
+    consultarClima(woeid, actualizarClima);
+    setInterval(consultarClima, 1000*60*60, woeid, actualizarClima);
   });
 </script>

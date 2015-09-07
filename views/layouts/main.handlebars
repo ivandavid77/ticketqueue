@@ -1,9 +1,12 @@
 <!doctype html>
 <html>
 <head>
-  <title>Crediland</title>
-  <script src="/js/jquery-1.10.2.js"></script>
-  <script src="/js/jquery-ui.js"></script>
+  <title>:: Grupo Crediland ::</title>
+  <script src="/js/jquery-1.11.3.min.js"></script>
+  <script src="/js/jquery-ui.min.js"></script>
+  <link rel="stylesheet" href="/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/bootstrap-theme.min.css">
+  <script src="/js/bootstrap.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script>
     var socket = io();
@@ -14,7 +17,22 @@
         document.addEventListener('DOMContentLoaded', fn)
       }
     }
+    ready( function() {
+      setInterval(function() {socket.emit("keep-alive",null)},10000);
+    });
   </script>
+  <style>
+    html {
+      height: 100%;
+    }
+    body {
+      position: absolute; 
+      top: 0;
+      bottom: 0;
+      right: 0;
+      left: 0;
+    }
+  </style>
 </head>
 <body>
 {{{body}}}
