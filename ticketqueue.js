@@ -51,24 +51,115 @@ app.use(function(err, req, res, next) {
 });
 
 
-function agregarTurno(t) {
-} 
-
+var turnos = [];
+var cajas = {};
+function agregarTurno(turno) {
+  if (turnos.indexOf(turno) == -1) {
+    turnos.push(turno);    
+  }
+}
+function ultimoTurnoRegistrado() {
+  if (turnos.length == 0) {
+    return 0;
+  } else {
+    return turnos[turnos.length - 1];
+  }
+}
+function registrarCaja(caja) {
+  if (!(caja in cajas)) {
+    cajas[caja] = {
+      atendidos: 0, 
+      disponible: true, 
+      turnoActual: -1
+    };
+  }
+  return cajas[caja].atendidos;
+}
+function turnoActual(caja) {
+  if (caja in cajas) {
+    return cajas[caja].turnoActual;
+  }
+  return -1;
+}
+function asignarTurno(caja, turno) {
+  if (caja in cajas) {
+    cajas[caja].disponible = false;
+    cajas[caja].turnoActual = turno;
+    return true;
+  }
+  return false;
+}
+function turnoAtendido(caja) {
+  if (caja in cajas) {
+    cajas[caja].disponible = true;
+    cajas[caja].turnoActual = -1;
+    cajas[caja].atendidos += 1;
+    return true;
+  }
+  return false;
+}
+function seleccionarCaja() {
+  var seleccionada = "";
+  var menor = -1;
+  for (caja in cajas) {
+    var info = cajas[caja];
+    if (info.disponible) {
+      if (menor = -1) {
+        menor = info.atendidos;
+        seleccionada = caja;
+      } else if (info.atendidos < menor) {
+        menor = info.atendidos;
+        seleccionada = caja;
+      }
+    }
+  }
+  return seleccionada;
+}
+function obtenerTurno() {
+  var turno = -1;
+  if (turnos.length > 0) {
+    turno = turnos.shift();
+  }
+  return turno;
+}
+function despachar(socket) {
+  var caja = seleccionarCaja();
+  if (caja == "") return;  
+  turno = obtenerTurno();
+  if (turno == -1) return;
+  asignarTurno(caja, turno);
+  var datos = {"caja": caja, "turno": turno};
+  socket.broadcast.emit('turno asignado', JSON.stringify(datos));
+  socket.broadcast.emit(caja, turno);
+}
 
 io.on('connection', function(socket) {
-  console.log('a user connected');
-  socket.on('disconnect', function() {
-    console.log('user disconnected');
+  socket.on('turno actual', function() {
+    var turno = ultimoTurnoRegistrado();
+    socket.emit('turno actual', turno);
   });
   socket.on('agregar turno', function(turno) {
     console.log('agregar turno '+turno);
     agregarTurno(turno);
+    despachar(socket);        
+  });
+  socket.on('registrar caja', function(caja) {
+    registrarCaja(caja);
+    socket.emit(caja, turnoActual(caja));
+    despachar(socket);
+  });
+  socket.on('turno atendido', function(caja) {
+    turnoAtendido(caja);
+    despachar(socket);
+  });
+  socket.on('turno actual', function(caja) {
+    socket.emit(caja, turnoActual(caja));
   });
   socket.on('turno asignado', function(datos) {
     var o = JSON.parse(datos);
     console.log('turno '+o.turno+' asignado a caja: '+o.caja);
     socket.broadcast.emit('turno asignado',datos);
-    socket.broadcast.emit('caja '+o.caja, o.turno);
+    socket.broadcast.emit(o.caja, o.turno);
   });
   socket.on('keep-alive', function(d) {
     socket.emit('keep-alive', null);

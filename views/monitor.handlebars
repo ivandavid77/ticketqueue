@@ -3,29 +3,74 @@
   <source src="/video/{{this.file}}" type="video/{{this.type}}">
 {{/each}}
 </video>
-<div style="float:right;text-align:center;margin: auto;margin-right:30px;">
-  <div id="reloj"></div>
-  <div style="font-family:courier;">
-    <h2>
-      <span class="label label-primary">Turno</span>
-      <span class="label label-primary">Caja</span>
-    </h2>
-    <ul id="turnos" style="list-style-type: none;padding:0;margin:0;">
-      <li></li>
-    </ul>
-  </div>
+
+<div class="turnos">
+  <h1 class="fuente_aumentada">
+    <span class="label label-primary">Turno</span>
+    <span class="label label-primary">Caja</span>
+  </h1>
+  <ul id="turnos" style="list-style-type: none;padding:0;margin:0;">
+    <li></li>
+  </ul>
 </div>
-<script src="/js/jquery.thooClock.js"></script>
+
+<div class="panel_inferior">
+  <div id="reloj" style="width:430px;float:left"></div>
+  <div style="float:right;width:350px;">
+    <img id="clima" src="/img/medio_nublado.png" 
+           style="padding-right:10px;float:left;" 
+           width="100" height="100">
+    <h1 class="grande" id="temperatura"></h1>
+  </div>
+  <h1 class="mediana" id="fechaActual"></h1>
+</div>
+<style>
+  body {
+    background-color: #343534;    
+  }
+  .grande {
+    font-size: 50px;
+  }
+  .mediana {
+    font-size: 40px;
+  }
+  .turnos {
+    float: right;
+    text-align: center;
+    margin: auto;
+    margin-right: 30px;
+    font-family: courier;
+  }
+  .panel_inferior {
+    width: 800px;
+    padding: 10px;
+    color: #FFFFFF;
+    font-weight: bold; 
+  }
+  .fuente_aumentada {
+    font-size: 300%;
+  }
+</style>
+<script src="/js/jquery.MyDigitClock.js"></script>
 <script>
-  ready(function() {
-    $( "#reloj" ).thooClock({
-      size: 225,
-      showNumerals: true,
-      brandText: "Caravana Crediland 2015"
+  ready(function() {    
+    var f = new Date();
+    var fechaActual = document.getElementById("fechaActual");
+    fechaActual.innerText = obtenerDia(f.getDay()) + " " + 
+      f.getDate() + " DE " + obtenerMes(f.getMonth()) + " " + 
+      f.getFullYear();
+    $( "#reloj" ).MyDigitClock({
+      fontSize: 70,
+      fontColor: "#FFF",
+      background: "#343534",
+      fontWeight: "bold",
+      bAmPm: true,
+      bShowHeartBeat: true      
     });
     function crearSpan(value, padding) {
+      value = value.toString();
       var el = document.createElement("span");
-      el.setAttribute("class", "label label-default");
+      el.setAttribute("class", "label label-info");
       var pad = "&nbsp;".repeat(padding - value.length);
       el.innerHTML = pad + value;
       return el;
@@ -55,25 +100,120 @@
       var caja = crearSpan(o.caja, 4) 
       
       var h2 = document.createElement("h2");
+      h2.setAttribute("class", "fuente_aumentada");
       h2.appendChild(turno);
       h2.appendChild(document.createTextNode(" "));
       h2.appendChild(caja);
+      
       li.appendChild(h2);
       $( "#turnos li:first-child" ).show( "slide" );
       
       var elems = ul.getElementsByTagName("li");
-      while (elems.length >= 8) {
-        $(elems[7]).hide(500);
-        sleep(1000);
-        elems[7].remove();
+      for (var i = 0; i < elems.length; i++) {
+        if (i >= 7) {
+          $(elems[i]).hide(500);
+        }
+      }
+      while (elems.length >= 9) {
+        var li = elems[8];
+        li.remove();
         elems = ul.getElementsByTagName("li");
       }
     });
     function actualizarClima(datos) {
-      console.log(datos);
+      var f = datos.query.results.channel.wind.chill;
+      var c = (5 / 9)*(f - 32);
+      var code = datos.query.results.channel.item.condition.code;
+      var desc = descripcionClima(code);
+      var temperatura = document.getElementById("temperatura");
+      temperatura.innerText = c.toFixed(1) + " C";
+      var clima = document.getElementById("clima");
+      clima.setAttribute("src","/img/" + desc + ".png");
     }
     var woeid = 90296029;
     consultarClima(woeid, actualizarClima);
     setInterval(consultarClima, 1000*60*60, woeid, actualizarClima);
+    function obtenerDia(dia) {
+      switch(dia) {
+        case 0: return "DOMINGO";
+        case 1: return "LUNES";
+        case 2: return "MARTES";
+        case 3: return "MIERCOLES";
+        case 4: return "JUEVES";
+        case 5: return "VIERNES";
+        case 6: return "SABADO";
+        default: return "";
+      }
+    }
+    function obtenerMes(mes) {
+      switch(mes) {
+        case 0: return "ENERO";
+        case 1: return "FEBRERO";
+        case 2: return "MARZO";
+        case 3: return "ABRIL";
+        case 4: return "MAYO";
+        case 5: return "JUNIO";
+        case 6: return "JULIO";
+        case 7: return "AGOSTO";
+        case 8: return "SEPTIEMBRE";
+        case 9: return "OCTUBRE";
+        case 10: return "NOVIEMBRE";
+        case 11: return "DICIEMBRE";
+        default : return "";
+      }
+    }
+    function descripcionClima(codigo) {
+      switch(parseInt(codigo)) {
+        case 0: return "tormenta";
+        case 1: return "tormenta";
+        case 2: return "tormenta";
+        case 3: return "tormenta";
+        case 4: return "tormenta";
+        case 5: return "lluvia";
+        case 6: return "lluvia";
+        case 7: return "nieve";
+        case 8: return "lluvia";
+        case 9: return "lluvia";
+        case 10: return "lluvia";
+        case 11: return "lluvia";
+        case 12: return "lluva";
+        case 13: return "nieve";
+        case 14: return "nieve";
+        case 15: return "nieve";
+        case 16: return "nieve";
+        case 17: return "nieve";
+        case 18: return "nieve";
+        case 19: return "neblina";
+        case 20: return "neblina";
+        case 21: return "neblina";
+        case 22: return "niebla";
+        case 23: return "viento";
+        case 24: return "viento";
+        case 25: return "viento";
+        case 26: return "nublado";
+        case 27: return "nublado";
+        case 28: return "nublado";
+        case 29: return "medio_nublado";
+        case 30: return "medio_nublado";
+        case 31: return "soleado";
+        case 32: return "soleado";
+        case 33: return "soleado";
+        case 34: return "soleado";
+        case 35: return "lluvia";
+        case 36: return "soleado";
+        case 37: return "tormenta";
+        case 38: return "tormenta";
+        case 39: return "tormenta";
+        case 40: return "lluvia";
+        case 41: return "nieve";
+        case 42: return "nieve";
+        case 43: return "nieve";
+        case 44: return "nublado";
+        case 45: return "tormenta";
+        case 46: return "nieve";
+        case 47: return "tormentas";
+        default: return "medio_nublado";
+      }
+    }
   });
 </script>

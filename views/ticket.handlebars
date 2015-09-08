@@ -1,17 +1,27 @@
-<input id="turno" type="text" readonly><br>
-<input id="emitirTicket" type="button" value="Obtener turno"><br>
+<h1>SIGUIENTE: </h1><h1 id="siguiente">1</h1>
+<input id="imprimir" style="height:1024px;width:1024px;" 
+       type="button" value="Imprimir turno"><br>
 <script>
   var turno = 1;
   ready(function() {
-    var emitirTicket = document.getElementById("emitirTicket");
-    emitirTicket.addEventListener('click', function() {
-      socket.emit("agregar turno", turno);
-      document.getElementById("turno").value = turno;
-      var impresion = window.open("","", "width=100,height=100");
-      impresion.document.write("<h1>"+turno+"</h1>");
-      impresion.print();
-      impresion.close();
-      turno += 1;
+    socket.on("turno actual", function(t) {
+      turno = t + 1;
+      document.getElementById("siguiente").innerHTML = turno;
+      var imprimir = document.getElementById("imprimir");
+      imprimir.addEventListener("click", function() {
+        socket.emit("agregar turno", turno);
+        var ventana = window.open("","","width=100,height=100");
+        var html = '&nbsp;<br><br>'+
+          '<h1 style="margin:auto; text-align:center;">'+
+          "TURNO "+turno+"</h1>"+
+          "<br><br>.";
+        ventana.document.write(html);
+        ventana.print();
+        ventana.close();
+        turno += 1;
+        document.getElementById("siguiente").innerHTML = turno;
+      });
     });
+    socket.emit("turno actual");
   });
 </script>

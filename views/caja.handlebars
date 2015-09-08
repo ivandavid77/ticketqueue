@@ -1,31 +1,67 @@
-<input id="caja" type="text"><br>
-<input id="registrar" type="button" value="registrar"><br>
-<br>
-<br>
-<label id="mensaje">Turno siguiente</label>
-<input id="turno" type="text" readonly>
-<br>
-<br>
-<input id="disponible" type="button" value="disponible" disabled>
+<div style="margin: auto;text-align:center;">
+  <h1 style="color:#FFFFFF;">CAJA</h1><br>
+  <input id="caja" class="sinRegistrar" type="text">
+  <br>
+  <br>
+  <input class="btn btn-lg btn-warning" 
+         id="registrar" type="button" value="Registrar"><br>
+  <br>
+  <br>
+  <label id="msj" style="color:#FFFFFF;"></label>
+  <br>
+  <br>
+  <input class="btn btn-lg btn-warning" 
+         id="terminado" type="button" value="Terminado" disabled>
+</div>
+<style>
+  body {
+    background-color: #343534;
+  }
+  .sinRegistrar {
+    height: 100px;
+    width: 100px;
+    font-size: 70px;
+    background-color: #EEEEEE;
+  }
+  .registrada {
+    height: 100px;
+    width: 100px;
+    font-size: 70px;
+    background-color: #343534;
+    color: #FFFFFF;
+    border: none;
+  }
+</style>
 <script>
   var registrar = document.getElementById("registrar");
-  var disponible = document.getElementById("disponible");
-  var turno = document.getElementById("turno");
-  var mensaje = document.getElementById("mensaje");
-  registrar.addEventListener('click', function(){
-    registrar.disabled = true;
+  registrar.addEventListener("click", function() {    
     var caja = document.getElementById("caja").value;
-    console.log(caja);
-    socket.on("caja "+caja, function(t){
-      disponible.disabled = false;
-      turno.value = t;
-      mensaje.innerHTML = "Atendiendo";
+    if (isNaN(parseInt(caja))) {
+      return;
+    }
+    registrar.style.display = "none"; 
+    var inputCaja = document.getElementById("caja");
+    inputCaja.readonly = true;
+    inputCaja.setAttribute("class", "registrada");
+    socket.on(caja, function(turno) {
+        if (turno == -1) {
+          document.getElementById("terminado").disabled = true;
+          document.getElementById("msj").innerHTML = "Disponible";
+        } else {
+          document.getElementById("terminado").disabled = false;
+          document.getElementById("msj").innerHTML = 
+            "Atendiendo al turno "+turno;
+        }
     });
+    socket.emit("registrar caja", caja);
+    setInterval(function() {
+      socket.emit("turno actual", caja);
+    }, 5000);
   });
-  disponible.addEventListener('click', function(){
-    disponible.disabled = true;
-    turno.value = "";
-    mensaje.value = "Turno siguiente";
-    socket.emit("caja disponible", caja);
+  var terminado = document.getElementById("terminado");  
+  terminado.addEventListener("click", function() {
+    terminado.disabled = true;
+    document.getElementById("msj").innerHTML = "Disponible";
+    socket.emit("turno atendido", caja);
   });
 </script>
