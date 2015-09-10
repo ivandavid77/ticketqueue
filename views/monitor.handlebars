@@ -1,66 +1,106 @@
-<video autoplay preload="auto" width="800" loop>
-{{#each video}}
-  <source src="/video/{{this.file}}" type="video/{{this.type}}">
-{{/each}}
+<video id="videos" autoplay autobuffer preload="auto"
+       style="background-color:#000000;"
+       width="770" height="700">
 </video>
 
-<div class="turnos">
-  <h1 class="fuente_aumentada">
-    <span class="label label-primary">Turno</span>
-    <span class="label label-primary">Caja</span>
+<div class="panel_turnos">
+  <h1 class="titulo">
+    <span class="label label-danger">TURNO</span>
+    <span class="label label-danger">CAJA</span>
   </h1>
-  <ul id="turnos" style="list-style-type: none;padding:0;margin:0;">
+  <br>
+  <br>
+  <br>
+  <ul id="turnos">
     <li></li>
   </ul>
 </div>
 
 <div class="panel_inferior">
-  <div id="reloj" style="width:430px;float:left"></div>
+  <div id="reloj"></div>
   <div style="float:right;width:350px;">
     <img id="clima" src="/img/medio_nublado.png" 
-           style="padding-right:10px;float:left;" 
-           width="100" height="100">
+         width="100" height="100">
     <h1 class="grande" id="temperatura"></h1>
   </div>
-  <h1 class="mediana" id="fechaActual"></h1>
+  <h1 id="fechaActual"></h1>
 </div>
 <style>
-  body {
-    background-color: #343534;    
-  }
-  .grande {
-    font-size: 50px;
-  }
-  .mediana {
-    font-size: 40px;
-  }
-  .turnos {
+  body { background-color: #343534; }
+  .grande { font-size: 50px; }
+  .panel_turnos {
     float: right;
     text-align: center;
     margin: auto;
-    margin-right: 30px;
-    font-family: courier;
+    margin-right: 15px;
   }
   .panel_inferior {
-    width: 800px;
+    width: 770px;
     padding: 10px;
     color: #FFFFFF;
     font-weight: bold; 
   }
-  .fuente_aumentada {
-    font-size: 300%;
+  .titulo {
+    font-size: 70px;
+    -webkit-transform: scale(1, 2);
+  }
+  #fechaActual {
+    font-size: 40px;
+  }
+  #reloj {
+    width: 390px;
+    height: 100px;
+    float: left;
+  }
+  #clima {
+    padding-right: 10px;
+    float: left;
+    height: 100px;
+  }
+  #turnos {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+  }
+  #turnos h1 {
+    margin-top: 50px;
+    margin-bottom: 50px;
+    font-size: 90px;
+    font-family: courier;
   }
 </style>
 <script src="/js/jquery.MyDigitClock.js"></script>
 <script>
+  var actual = -1;
+  var videos = [
+    {{#each video}}
+      {"src": "/video/{{this.file}}"},
+    {{/each}}
+  ];
+  function siguienteVideo() {
+    if (videos.length == 0)
+      return -1;
+    actual++;
+    if (actual >= videos.length)
+      return 0;
+    else
+      return actual;
+  }
+  function reproducir() {
+    var siguiente = siguienteVideo();
+    if (siguiente != -1) {
+      document.getElementById("videos").src = videos[siguiente].src;
+    }
+  }
   ready(function() {    
+    var socket = io.connect("http://"+location.host);
     var f = new Date();
     var fechaActual = document.getElementById("fechaActual");
     fechaActual.innerText = obtenerDia(f.getDay()) + " " + 
       f.getDate() + " DE " + obtenerMes(f.getMonth()) + " " + 
       f.getFullYear();
     $( "#reloj" ).MyDigitClock({
-      fontSize: 70,
+      fontSize: 60,
       fontColor: "#FFF",
       background: "#343534",
       fontWeight: "bold",
@@ -70,7 +110,7 @@
     function crearSpan(value, padding) {
       value = value.toString();
       var el = document.createElement("span");
-      el.setAttribute("class", "label label-info");
+      el.setAttribute("class", "label label-primary");
       var pad = "&nbsp;".repeat(padding - value.length);
       el.innerHTML = pad + value;
       return el;
@@ -78,9 +118,11 @@
     function consultarClima(woeid, callback) {
       var request = new XMLHttpRequest();
       var host = "query.yahooapis.com/v1/public/yql?q=";
-      var uri = "select * from weather.forecast where woeid="+woeid+"\n";
+      var uri = "select * from weather.forecast "+
+        "where woeid="+woeid+"\n";
       var query = encodeURI(uri);
-      request.open("GET", "https://"+host+query+"&format=json", true);
+      request.open("GET",
+          "https://"+host+query+"&format=json", true);
       request.onload = function() {
         if (request.status >= 200 && request.status < 400) {
           var data = JSON.parse(request.responseText);
@@ -89,34 +131,54 @@
       };
       request.send();
     }
-    socket.on('turno asignado', function(datos) {
-      var o = JSON.parse(datos);
+
+    document.getElementById("videos").onended = function() {
+      reproducir();
+    }
+    socket.on("videos_actualizados", function(disponibles) {
+      var videoPlayer = document.getElementById("videos");
+      videoPlayer.pause();
+      videoPlayer.src = "";
+      videos = JSON.parse(disponibles);
+      actual = -1;
+      reproducir();
+    });
+    reproducir();
+    socket.on('refrescar_monitor', function() {
+      location.reload();
+    });
+    socket.on("turno_asignado", function(asignacion) {
+      var a = JSON.parse(asignacion);
+      socket.emit("monitor_confirma_recepcion", a.id);
+      var id = a.caja + "_" + a.turno;
+      if (document.getElementById(id) != null) return;
       var ul = document.getElementById("turnos");
-      var li = document.createElement("li");
-      li.style.display = "none";
-      ul.insertBefore(li, ul.firstChild);
-      
-      var turno = crearSpan(o.turno, 5); 
-      var caja = crearSpan(o.caja, 4) 
-      
-      var h2 = document.createElement("h2");
-      h2.setAttribute("class", "fuente_aumentada");
-      h2.appendChild(turno);
-      h2.appendChild(document.createTextNode(" "));
-      h2.appendChild(caja);
-      
-      li.appendChild(h2);
-      $( "#turnos li:first-child" ).show( "slide" );
-      
       var elems = ul.getElementsByTagName("li");
-      for (var i = 0; i < elems.length; i++) {
-        if (i >= 7) {
+      for (var i=0; i < elems.length; i++) {
+        if (i >= 4)
           $(elems[i]).hide(500);
-        }
       }
-      while (elems.length >= 9) {
-        var li = elems[8];
-        li.remove();
+
+      var li = document.createElement("li");
+      li.setAttribute("id", id);
+      li.setAttribute("class", a.caja);
+      li.style.display = "none";
+
+      ul.insertBefore(li, ul.firstChild);
+ 
+      var turno = crearSpan(a.turno, 4);
+      var caja = crearSpan(a.caja, 2);
+
+      var h1 = document.createElement("h1");
+      h1.appendChild(turno);
+      h1.appendChild(document.createTextNode(" "));
+      h1.appendChild(caja);
+ 
+      li.appendChild(h1);
+      $( "#turnos li:first-child" ).show( "slide" );
+
+      while (elems.length >= 10) {
+        elems[9].remove();
         elems = ul.getElementsByTagName("li");
       }
     });
@@ -211,7 +273,7 @@
         case 44: return "nublado";
         case 45: return "tormenta";
         case 46: return "nieve";
-        case 47: return "tormentas";
+        case 47: return "tormenta";
         default: return "medio_nublado";
       }
     }

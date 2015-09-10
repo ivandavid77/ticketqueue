@@ -1,7 +1,7 @@
 var fs = require('fs');
 var path = require('path');
 var express = require('express');
-
+var uuid = require('node-uuid');
 
 var handlebars = require('express-handlebars').create(
   { defaultLayout: 'main' } 
@@ -10,8 +10,9 @@ var handlebars = require('express-handlebars').create(
 
 var app = express();
 var http = require('http').Server(app);
-var io = require('socket.io')(http, { pingTimeout: 60000*3} );
-io.set('heartbeat timeout', 60000*3);
+var io = require('socket.io').listen(http,{log:false});
+//(http, { pingTimeout: 60000*3} );
+//io.set('heartbeat timeout', 60000*3);
 
 
 app.set('port', process.env.PORT || 8080);
@@ -23,9 +24,7 @@ app.get('/monitor', function(req, res) {
   fs.readdir(__dirname + '/public/video', function(err, files) {
     listado = [];
     files.forEach(function(f){
-      var t = (path.extname(f) == '.ogv')? 
-        'ogg':path.extname(f).replace('.','');
-      listado.push( { file: f, type: t } );
+      listado.push( { file: f } );
     });
     res.render('monitor', { video : listado });
   });
@@ -53,6 +52,7 @@ app.use(function(err, req, res, next) {
 
 var turnos = [];
 var cajas = {};
+var intervalos = {};
 function agregarTurno(turno) {
   if (turnos.indexOf(turno) == -1) {
     turnos.push(turno);    
@@ -122,47 +122,64 @@ function obtenerTurno() {
   }
   return turno;
 }
-function despachar(socket) {
+function despachar() {
   var caja = seleccionarCaja();
-  if (caja == "") return;  
+  if (caja == "") return null;
   turno = obtenerTurno();
-  if (turno == -1) return;
+  if (turno == -1) return null;
   asignarTurno(caja, turno);
-  var datos = {"caja": caja, "turno": turno};
-  socket.broadcast.emit('turno asignado', JSON.stringify(datos));
-  socket.broadcast.emit(caja, turno);
+  return {"caja": caja, "turno": turno};
+}
+function difundir(io, asignacion) {
+  if (asignacion == null) return;
+  asignacion.id = uuid.v1();
+  var intervalo = setInterval(function() {
+    io.sockets.emit('turno_asignado', JSON.stringify(asignacion));
+  },5000);
+  intervalos[asignacion.id] = intervalo;
+  io.sockets.emit('turno_asignado', JSON.stringify(asignacion));
+  io.sockets.emit(asignacion.caja, asignacion.turno);
 }
 
-io.on('connection', function(socket) {
-  socket.on('turno actual', function() {
+
+io.sockets.on('connection', function(socket) {
+  console.log('conectado');
+  socket.on('disconnect', function() {
+    console.log('desconectado');
+  });
+  socket.on('ultimo_turno_generado', function() {
     var turno = ultimoTurnoRegistrado();
-    socket.emit('turno actual', turno);
+    socket.emit('ultimo_turno_generado', turno);
   });
-  socket.on('agregar turno', function(turno) {
-    console.log('agregar turno '+turno);
+  socket.on('agregar_turno', function(turno) {
     agregarTurno(turno);
-    despachar(socket);        
+    difundir(io, despachar());
   });
-  socket.on('registrar caja', function(caja) {
+  socket.on('registrar_caja', function(caja) {
     registrarCaja(caja);
     socket.emit(caja, turnoActual(caja));
-    despachar(socket);
+    difundir(io, despachar());
   });
-  socket.on('turno atendido', function(caja) {
+  socket.on('turno_atendido', function(caja) {
     turnoAtendido(caja);
-    despachar(socket);
+    difundir(io, despachar());
   });
-  socket.on('turno actual', function(caja) {
+  socket.on('turno_actual', function(caja) {
     socket.emit(caja, turnoActual(caja));
   });
-  socket.on('turno asignado', function(datos) {
-    var o = JSON.parse(datos);
-    console.log('turno '+o.turno+' asignado a caja: '+o.caja);
-    socket.broadcast.emit('turno asignado',datos);
-    socket.broadcast.emit(o.caja, o.turno);
+  socket.on('monitor_confirma_recepcion', function(id) {
+    if (id in intervalos) {
+      clearInterval(intervalos[id]);
+    }
   });
-  socket.on('keep-alive', function(d) {
-    socket.emit('keep-alive', null);
+  socket.on('asignacion_manual', function(asignacion) {
+    difundir(io, JSON.parse(asignacion));
+  });
+  socket.on('videos_actualizados', function() {
+    socket.broadcast.emit('videos_actualizados');
+  });
+  socket.on('refrescar_monitor', function() {
+    socket.broadcast.emit('refrescar_monitor');
   });
 });
 

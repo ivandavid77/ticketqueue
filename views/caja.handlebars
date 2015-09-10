@@ -33,17 +33,19 @@
   }
 </style>
 <script>
-  var registrar = document.getElementById("registrar");
-  registrar.addEventListener("click", function() {    
-    var caja = document.getElementById("caja").value;
-    if (isNaN(parseInt(caja))) {
-      return;
-    }
-    registrar.style.display = "none"; 
-    var inputCaja = document.getElementById("caja");
-    inputCaja.readonly = true;
-    inputCaja.setAttribute("class", "registrada");
-    socket.on(caja, function(turno) {
+  ready(function() {
+    var socket = io.connect("http://"+location.host);
+    var registrar = document.getElementById("registrar");
+    registrar.addEventListener("click", function() {
+      var caja = document.getElementById("caja").value;
+      if (isNaN(parseInt(caja))) {
+        return;
+      }
+      registrar.style.display = "none";
+      var inputCaja = document.getElementById("caja");
+      inputCaja.readonly = true;
+      inputCaja.setAttribute("class", "registrada");
+      socket.on(caja, function(turno) {
         if (turno == -1) {
           document.getElementById("terminado").disabled = true;
           document.getElementById("msj").innerHTML = "Disponible";
@@ -52,17 +54,18 @@
           document.getElementById("msj").innerHTML = 
             "Atendiendo al turno "+turno;
         }
+      });
+      socket.emit("registrar_caja", caja);
+      setInterval(function() {
+        socket.emit("turno_actual", caja);
+      }, 5000);
     });
-    socket.emit("registrar caja", caja);
-    setInterval(function() {
-      socket.emit("turno actual", caja);
-    }, 5000);
-  });
-  var terminado = document.getElementById("terminado");  
-  terminado.addEventListener("click", function() {
-    terminado.disabled = true;
-    document.getElementById("msj").innerHTML = "Disponible";
-    var caja = document.getElementById("caja").value;
-    socket.emit("turno atendido", caja);
+    var terminado = document.getElementById("terminado");
+    terminado.addEventListener("click", function() {
+      terminado.disabled = true;
+      document.getElementById("msj").innerHTML = "Disponible";
+      var caja = document.getElementById("caja").value;
+      socket.emit("turno_atendido", caja);
+    });
   });
 </script>

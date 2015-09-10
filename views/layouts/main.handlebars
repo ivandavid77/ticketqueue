@@ -9,7 +9,6 @@
   <script src="/js/bootstrap.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    var socket = io();
     function ready(fn) {
       if (document.readyState != 'loading') {
         fn();
@@ -17,9 +16,6 @@
         document.addEventListener('DOMContentLoaded', fn)
       }
     }
-    ready( function() {
-      setInterval(function() {socket.emit("keep-alive",null)},10000);
-    });
   </script>
   <style>
     html {
