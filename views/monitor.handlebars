@@ -9,9 +9,6 @@
     <span class="label label-danger">TURNO</span>
     <span class="label label-danger">CAJA</span>
   </h1>
-  <br>
-  <br>
-  <br>
   <ul id="turnos">
     <li></li>
   </ul>
@@ -24,6 +21,7 @@
          width="100" height="100">
     <h1 class="grande" id="temperatura"></h1>
   </div>
+  <br>
   <h1 id="fechaActual"></h1>
 </div>
 <style>
@@ -43,7 +41,6 @@
   }
   .titulo {
     font-size: 70px;
-    -webkit-transform: scale(1, 2);
   }
   #fechaActual {
     font-size: 40px;
@@ -97,7 +94,7 @@
     var socket = io.connect("http://"+location.host);
     var f = new Date();
     var fechaActual = document.getElementById("fechaActual");
-    fechaActual.innerText = obtenerDia(f.getDay()) + " " + 
+    fechaActual.innerHTML = obtenerDia(f.getDay()) + " " + 
       f.getDate() + " DE " + obtenerMes(f.getMonth()) + " " + 
       f.getFullYear();
     $( "#reloj" ).MyDigitClock({
@@ -156,8 +153,8 @@
       var ul = document.getElementById("turnos");
       var elems = ul.getElementsByTagName("li");
       for (var i=0; i < elems.length; i++) {
-        if (i >= 4)
-          $(elems[i]).hide(500);
+        if (i >= 3)
+          $(elems[i]).hide(200);
       }
 
       var li = document.createElement("li");
@@ -189,7 +186,7 @@
       var code = datos.query.results.channel.item.condition.code;
       var desc = descripcionClima(code);
       var temperatura = document.getElementById("temperatura");
-      temperatura.innerText = c.toFixed(1) + " C";
+      temperatura.innerHTML = c.toFixed(1) + " C";
       var clima = document.getElementById("clima");
       clima.setAttribute("src","/img/" + desc + ".png");
     }
