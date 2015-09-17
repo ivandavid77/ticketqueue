@@ -93,10 +93,74 @@
   }
 
 
-  ready(function() {    
+  // Asignaciones
+  function crearSpan(value, padding) {
+    value = value.toString();
+    var el = document.createElement("span");
+    el.setAttribute("class", "label label-primary");
+    var pad = "&nbsp;".repeat(padding - value.length);
+    el.innerHTML = pad + value;
+    return el;
+  }
+  function agregarAsignacionVisualizada(asignacion) {
+    if (localStorage.getItem("visualizadas")) {
+      var visualizadas = JSON.parse(localStorage.getItem("visualizadas"));
+      visualizadas.push(asignacion);
+      while (visualizadas.length > 4)
+        visualizadas.shift();
+      localStorage.setItem("visualizadas", JSON.stringify(visualizadas));
+    } else {
+      localStorage.setItem("visualizadas", JSON.stringify([asignacion]));
+    }
+  }
+  function obtenerAsignacionesVisualizadas() {
+    if (localStorage.getItem("visualizadas")) {
+      return JSON.parse(localStorage.getItem("visualizadas"));
+    } else {
+      return [];
+    }
+  }
+  function limpiar() {
+    localStorage.setItem("visualizadas", JSON.stringify([]));
+  }
+  function mostrarAsignacion(asignacion) {
+    var ul = document.getElementById("turnos");
+    var elems = ul.getElementsByTagName("li");
+    for (var i = 0; i < elems.length; i++) {
+      if (i >= 3)
+      $(elems[i]).hide(200);
+    }
+
+    var li = document.createElement("li");
+    var id = asignacion.caja + "_" + asignacion.turno;
+    li.setAttribute("id", id);
+    li.setAttribute("class", asignacion.caja);
+    li.style.display = "none";
+
+    ul.insertBefore(li, ul.firstChild);
+
+    var h1 = document.createElement("h1");
+    h1.appendChild(crearSpan(asignacion.turno, 4));
+    h1.appendChild(document.createTextNode(" "));
+    h1.appendChild(crearSpan(asignacion.caja, 2));
+
+    li.appendChild(h1);
+    $( "#turnos li:first-child" ).show( "slide" );
+
+    while (elems.length >= 10) {
+      elems[9].remove();
+      elems = ul.getElementsByTagName("li");
+    }
+  }
+
+  ready(function() {
+    var visualizadas = obtenerAsignacionesVisualizadas();
+    for (var i = 0; i < visualizadas.length; i++) {
+      mostrarAsignacion(visualizadas[i]);
+    }
+
     var socket = io.connect("http://"+location.host);
     
-
     // Fecha
     var f = new Date();
     var fechaActual = document.getElementById("fechaActual");
@@ -148,45 +212,13 @@
       }
       asignaciones.push(asignacion);
     });
-    function crearSpan(value, padding) {
-      value = value.toString();
-      var el = document.createElement("span");
-      el.setAttribute("class", "label label-primary");
-      var pad = "&nbsp;".repeat(padding - value.length);
-      el.innerHTML = pad + value;
-      return el;
-    }
     setInterval(function() {
       if (asignaciones.length == 0)
         return;
+
       var asignacion = asignaciones.shift();
-      var ul = document.getElementById("turnos");
-      var elems = ul.getElementsByTagName("li");
-      for (var i = 0; i < elems.length; i++) {
-        if (i >= 3)
-          $(elems[i]).hide(200);
-      }
-       
-      var li = document.createElement("li");
-      var id = asignacion.caja + "_" + asignacion.turno;
-      li.setAttribute("id", id);
-      li.setAttribute("class", asignacion.caja);
-      li.style.display = "none";
-
-      ul.insertBefore(li, ul.firstChild);
- 
-      var h1 = document.createElement("h1");
-      h1.appendChild(crearSpan(asignacion.turno, 4));
-      h1.appendChild(document.createTextNode(" "));
-      h1.appendChild(crearSpan(asignacion.caja, 2));
- 
-      li.appendChild(h1);
-      $( "#turnos li:first-child" ).show( "slide" );
-
-      while (elems.length >= 10) {
-        elems[9].remove();
-        elems = ul.getElementsByTagName("li");
-      }
+      agregarAsignacionVisualizada(asignacion);
+      mostrarAsignacion(asignacion); 
     }, 10000);
 
 
