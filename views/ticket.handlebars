@@ -23,6 +23,8 @@
         document.getElementById("siguiente").innerHTML = turno;
       });
     });
-    socket.emit("ultimo_turno_generado");
+    setInterval(function () {
+      socket.emit("ultimo_turno_generado");
+    }, 5000);
   });
 </script>

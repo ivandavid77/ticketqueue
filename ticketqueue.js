@@ -11,8 +11,6 @@ var handlebars = require('express-handlebars').create(
 var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io').listen(http,{log:false});
-//(http, { pingTimeout: 60000*3} );
-//io.set('heartbeat timeout', 60000*3);
 
 
 app.set('port', process.env.PORT || 8080);
@@ -53,16 +51,35 @@ app.use(function(err, req, res, next) {
 var turnos = [];
 var cajas = {};
 var intervalos = {};
+var CAJAS_FILENAME = __dirname + '/cajas.json';
+var TURNOS_FILENAME = __dirname + '/turnos.json';
+function almacenarDatos(objeto, archivo) {
+  fs.writeFile(archivo, JSON.stringify(objeto), function(err) {
+    if (err) {
+      console.log('Error al guardar el archivo: ', archivo,
+        ', error: ', err);
+    }
+  });
+}
+function almacenarCajas() {
+  almacenarDatos(cajas, CAJAS_FILENAME);
+}
+function almacenarTurnos() {
+  almacenarDatos(turnos, TURNOS_FILENAME);
+}
 function agregarTurno(turno) {
-  if (turnos.indexOf(turno) == -1) {
-    turnos.push(turno);    
+  for (var i = 0; i < turnos.length; i++) {
+    if (turnos[i].turno == turno)
+      return;
   }
+  turnos.push({"turno": turno});
+  almacenarTurnos();
 }
 function ultimoTurnoRegistrado() {
   if (turnos.length == 0) {
     return 0;
   } else {
-    return turnos[turnos.length - 1];
+    return turnos[turnos.length - 1].turno;
   }
 }
 function registrarCaja(caja) {
@@ -73,6 +90,7 @@ function registrarCaja(caja) {
       turnoActual: -1
     };
   }
+  almacenarCajas();
   return cajas[caja].atendidos;
 }
 function turnoActual(caja) {
@@ -85,6 +103,7 @@ function asignarTurno(caja, turno) {
   if (caja in cajas) {
     cajas[caja].disponible = false;
     cajas[caja].turnoActual = turno;
+    almacenarCajas();
     return true;
   }
   return false;
@@ -94,6 +113,7 @@ function turnoAtendido(caja) {
     cajas[caja].disponible = true;
     cajas[caja].turnoActual = -1;
     cajas[caja].atendidos += 1;
+    almacenarCajas();
     return true;
   }
   return false;
@@ -118,8 +138,9 @@ function seleccionarCaja() {
 function obtenerTurno() {
   var turno = -1;
   if (turnos.length > 0) {
-    turno = turnos.shift();
+    turno = turnos.shift().turno;
   }
+  almacenarTurnos();
   return turno;
 }
 function despachar() {
@@ -183,8 +204,48 @@ io.sockets.on('connection', function(socket) {
   });
 });
 
-http.listen(app.get('port'), function() {
-  console.log(
-    'Aplicacion iniciada en puerto: ' + app.get('port'));
-});
+// Verificar si hay datos por cargar
+var cargarCacheCajas = function(callback) {
+  fs.readFile(CAJAS_FILENAME, function(err, data) {
+    if (err) {
+      console.log('No se pudieron cargar los datos del archivo: ',
+        CAJAS_FILENAME, ', error: ', err);
+      cajas = {};
+    } else {
+      try {
+        cajas = JSON.parse(data);
+      } catch (err) {
+        cajas = {};
+      }
+    }
+    callback();
+  });
+};
+var cargarCacheTurnos = function(callback) {
+  fs.readFile(TURNOS_FILENAME, function(err, data) {
+    if (err) {
+      console.log('No se pudieron cargar los datos del archivo: ',
+        TURNOS_FILENAME, ', error: ', err);
+      turnos = [];
+    } else {
+      try {
+        turnos = JSON.parse(data);
+      } catch (err) {
+        turnos = [];
+      }
+    }
+    callback();
+  });
+};
+var iniciarAplicacion = function () {
+  http.listen(app.get('port'), function() {
+    console.log(
+      'Aplicacion iniciada en puerto: ' + app.get('port'));
+    console.log('Cajas: ', cajas);
+    console.log('Turnos: ', turnos);
+  });
+};
 
+cargarCacheCajas(function() {
+    cargarCacheTurnos( iniciarAplicacion );
+});
