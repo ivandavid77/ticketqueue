@@ -80,10 +80,10 @@
     if (videos.length == 0)
       return -1;
     videoActual++;
-    if (videoActual >= videos.length)
-      return 0;
-    else
-      return videoActual;
+    if (videoActual >= videos.length) {
+      videoActual = 0;
+    }
+    return videoActual;
   }
   function reproducir() {
     var siguiente = siguienteVideo();
