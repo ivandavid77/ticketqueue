@@ -168,9 +168,8 @@ io.sockets.on('connection', function(socket) {
   socket.on('disconnect', function() {
     console.log('desconectado');
   });
-  socket.on('ultimo_turno_generado', function() {
-    var turno = ultimoTurnoRegistrado();
-    socket.emit('ultimo_turno_generado', turno);
+  socket.on('ultimo_turno_registrado', function() {
+    socket.emit('ultimo_turno_registrado', ultimoTurnoRegistrado());
   });
   socket.on('agregar_turno', function(turno) {
     agregarTurno(turno);
@@ -243,6 +242,9 @@ var iniciarAplicacion = function () {
       'Aplicacion iniciada en puerto: ' + app.get('port'));
     console.log('Cajas: ', cajas);
     console.log('Turnos: ', turnos);
+    setTimeout(function() {
+        io.sockets.emit("ultimo_turno_registrado",ultimoTurnoRegistrado());
+    },10000);
   });
 };
 
