@@ -65,6 +65,7 @@ function almacenarCajas() {
   almacenarDatos(cajas, CAJAS_FILENAME);
 }
 function almacenarTurnos() {
+  console.log(JSON.stringify(turnos)+'\n');
   almacenarDatos(turnos, TURNOS_FILENAME);
 }
 function agregarTurno(turno) {
@@ -124,7 +125,7 @@ function seleccionarCaja() {
   for (caja in cajas) {
     var info = cajas[caja];
     if (info.disponible) {
-      if (menor = -1) {
+      if (menor === -1) {
         menor = info.atendidos;
         seleccionada = caja;
       } else if (info.atendidos < menor) {
@@ -180,6 +181,14 @@ io.sockets.on('connection', function(socket) {
     socket.emit(caja, turnoActual(caja));
     difundir(io, despachar());
   });
+  socket.on('comida', function(caja) {
+    if (caja in cajas) {
+      cajas[caja].disponible = false;
+      cajas[caja].turnoActual = 0;
+      socket.broadcast.emit(caja, 0);
+      almacenarCajas();
+    }
+  });
   socket.on('turno_atendido', function(caja) {
     turnoAtendido(caja);
     difundir(io, despachar());
@@ -200,6 +209,9 @@ io.sockets.on('connection', function(socket) {
   });
   socket.on('refrescar_monitor', function() {
     socket.broadcast.emit('refrescar_monitor');
+  });
+  socket.on('obtener_turnos', function() {
+    socket.emit('turnos', JSON.stringify(turnos));
   });
 });
 
@@ -249,5 +261,5 @@ var iniciarAplicacion = function () {
 };
 
 cargarCacheCajas(function() {
-    cargarCacheTurnos( iniciarAplicacion );
+  cargarCacheTurnos( iniciarAplicacion );
 });
