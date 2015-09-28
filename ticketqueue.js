@@ -165,7 +165,14 @@ function difundir(io, asignacion) {
 
 
 io.sockets.on('connection', function(socket) {
-  console.log('conectado');
+  if (socket.handshake && 
+      socket.handshake.address &&
+      socket.handshake.address.address) {
+    var address = socket.handshake.address.address;
+  } else {
+    var address = '';
+  }
+  console.log('conectado '+address);
   socket.on('disconnect', function() {
     console.log('desconectado');
   });
