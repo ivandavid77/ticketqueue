@@ -15,8 +15,8 @@
   <br>
   <br>
   <input class="btn btn-lg btn-warning"
-         id="comida" type="button" value="comida" 
-         disabled>
+         id="comida" type="button" 
+         value="Caja Temporalmente Cerrada" disabled>
 </div>
 <style>
   body {
@@ -46,9 +46,11 @@
     var caja = document.getElementById("caja");
     var msj = document.getElementById("msj");
     registrar.addEventListener("click", function() {
-      if (isNaN(parseInt(caja.value))) {
+      var numeroCaja = parseInt(caja.value);
+      if (isNaN(numeroCaja)) {
         return;
       }
+      caja.value = numeroCaja.toString();
       registrar.style.display = "none";
       caja.readonly = true;
       caja.setAttribute("class", "registrada");

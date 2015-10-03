@@ -112,8 +112,10 @@ function asignarTurno(caja, turno) {
 function turnoAtendido(caja) {
   if (caja in cajas) {
     cajas[caja].disponible = true;
+    if (cajas[caja].turnoActual !== 0) {
+      cajas[caja].atendidos += 1;
+    }
     cajas[caja].turnoActual = -1;
-    cajas[caja].atendidos += 1;
     almacenarCajas();
     return true;
   }
@@ -210,6 +212,12 @@ io.sockets.on('connection', function(socket) {
   });
   socket.on('asignacion_manual', function(asignacion) {
     difundir(io, JSON.parse(asignacion));
+  });
+  socket.on('eliminar_caja', function(caja) {
+    if (caja in cajas) {
+      delete cajas[caja];
+      almacenarCajas();
+    }
   });
   socket.on('videos_actualizados', function() {
     socket.broadcast.emit('videos_actualizados');
