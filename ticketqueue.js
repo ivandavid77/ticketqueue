@@ -179,7 +179,8 @@ io.sockets.on('connection', function(socket) {
     console.log('desconectado');
   });
   socket.on('ultimo_turno_registrado', function() {
-    socket.emit('ultimo_turno_registrado', ultimoTurnoRegistrado());
+    socket.emit('ultimo_turno_registrado', 
+      ultimoTurnoRegistrado());
   });
   socket.on('agregar_turno', function(turno) {
     agregarTurno(turno);
@@ -191,7 +192,8 @@ io.sockets.on('connection', function(socket) {
     difundir(io, despachar());
   });
   socket.on('comida', function(caja) {
-    if (caja in cajas) {
+    if (caja in cajas && 
+        cajas[caja].turnoActual === -1) {
       cajas[caja].disponible = false;
       cajas[caja].turnoActual = 0;
       socket.broadcast.emit(caja, 0);
@@ -210,12 +212,18 @@ io.sockets.on('connection', function(socket) {
       clearInterval(intervalos[id]);
     }
   });
-  socket.on('asignacion_manual', function(asignacion) {
-    difundir(io, JSON.parse(asignacion));
+  socket.on('asignar_turno', function(caja, turno) {
+    asignarTurno(caja, turno);
   });
   socket.on('eliminar_caja', function(caja) {
     if (caja in cajas) {
       delete cajas[caja];
+      almacenarCajas();
+    }
+  });
+  socket.on('establecer_atendidos', function(caja, atendidos) {
+    if (caja in cajas) {
+      cajas[caja].atendidos = atendidos;
       almacenarCajas();
     }
   });
